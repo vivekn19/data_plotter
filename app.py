@@ -169,27 +169,37 @@ with tab3:
     st.header("Venn Diagram")
     st.info("Select exactly 2 or 3 files to generate a Venn Diagram.")
     
-    venn_cols = st.multiselect("Select files for Venn Diagram", 
-                               options=filtered_matrix.columns.tolist(),
-                               max_selections=3)
+    with st.form("venn_form"):
+        venn_cols = st.multiselect("Select files for Venn Diagram", 
+                                   options=filtered_matrix.columns.tolist(),
+                                   max_selections=3)
+        submit_venn = st.form_submit_button("📊 Generate Venn Diagram")
     
-    if len(venn_cols) in [2, 3]:
-        with st.spinner("Generating Venn diagram..."):
-            fig_venn = create_venn_diagram(filtered_matrix, venn_cols)
-            if fig_venn:
-                st.pyplot(fig_venn)
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    pdf_venn = export_plot_to_bytes(fig_venn, 'pdf')
-                    st.download_button("Download Venn (PDF)", pdf_venn, "venn.pdf", "application/pdf")
-                with col2:
-                    png_venn = export_plot_to_bytes(fig_venn, 'png')
-                    st.download_button("Download Venn (PNG)", png_venn, "venn.png", "image/png")
-    elif len(venn_cols) == 1:
-        st.warning("Please select at least one more file.")
-    elif len(venn_cols) > 3:
-        st.error("Venn diagrams are limited to a maximum of 3 files. Please use the UpSet Plot for more sets.")
+    if submit_venn or (st.session_state.get('venn_active') and not submit_venn):
+        if len(venn_cols) in [2, 3]:
+            # Store in session state to keep visible during downloads
+            st.session_state.venn_active = True
+            st.session_state.venn_cols = venn_cols
+            
+            with st.spinner("Generating Venn diagram..."):
+                fig_venn = create_venn_diagram(filtered_matrix, venn_cols)
+                if fig_venn:
+                    st.pyplot(fig_venn)
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        pdf_venn = export_plot_to_bytes(fig_venn, 'pdf')
+                        st.download_button("Download Venn (PDF)", pdf_venn, "venn.pdf", "application/pdf")
+                    with col2:
+                        png_venn = export_plot_to_bytes(fig_venn, 'png')
+                        st.download_button("Download Venn (PNG)", png_venn, "venn.png", "image/png")
+        else:
+            if submit_venn:
+                if len(venn_cols) < 2:
+                    st.warning("Please select at least 2 files.")
+                elif len(venn_cols) > 3:
+                    st.error("Venn diagrams are limited to a maximum of 3 files.")
+            st.session_state.venn_active = False
 
 with tab4:
     st.header("Binary Occurrence Matrix")
