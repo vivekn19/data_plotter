@@ -167,7 +167,7 @@ if matrix.empty:
 metric_ribbon(len(processed_files), matrix.shape[0])
 
 # --- REFINED FILTERBAR (GROUPED CARD) ---
-st.markdown('<div class="sidebar-card" style="background-color: transparent; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">', unsafe_allow_html=True)
+st.markdown('<div class="analysis-control-card">', unsafe_allow_html=True)
 section_header("Analysis Controls", "🔍")
 col1, col2 = st.columns([2, 1])
 with col1:
@@ -183,7 +183,7 @@ filtered_matrix = filter_matrix(matrix, min_occurrence)
 # Result Summary Badge
 st.markdown(f"""
     <div style='margin-top: 1rem;'>
-        <span class="status-badge badge-info">Intersection: {filtered_matrix.shape[0]} Targets</span>
+        <span class="status-badge badge-info" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">Intersection: {filtered_matrix.shape[0]} Targets</span>
         <span class="status-badge badge-success">Confidence: ≥ {min_occurrence} Slices</span>
     </div>
 """, unsafe_allow_html=True)

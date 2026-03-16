@@ -9,17 +9,21 @@
     border-right: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Dark Inputs */
-[data-testid="stSidebar"] .stTextInput input {
+/* Dark Inputs Global */
+.stTextInput input, .stSelectbox [data-baseweb="select"], .stMultiSelect [data-baseweb="text-input-container"] {
     background-color: #161b22 !important;
     color: #f0f6fc !important;
     border: 1px solid #30363d !important;
     border-radius: 6px;
 }
 
-[data-testid="stSidebar"] .stTextInput input:focus {
-    border-color: #10B981 !important;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+/* Slider Customization */
+[data-testid="stSlider"] [data-testid="stThumb"] {
+    background-color: #10B981 !important;
+}
+
+[data-testid="stSlider"] [data-baseweb="slider"] > div {
+    background-color: #30363d !important;
 }
 
 /* Glassmorphism Cards for Sidebar */
@@ -32,9 +36,13 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.sidebar-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+/* Control Panel Alignment */
+.analysis-control-card {
+    background-color: #0d1117;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 /* Metric Ribbon */
