@@ -7,7 +7,7 @@ import numpy as np
 from upsetplot import from_indicators, plot as upset_plot
 import io
 
-def create_clustered_heatmap(matrix: pd.DataFrame):
+def create_clustered_heatmap(matrix: pd.DataFrame, show_grid: bool = True):
     """
     Generates a Clustered Heatmap using Jaccard metric for similarity.
     Returns a matplotlib figure.
@@ -32,7 +32,7 @@ def create_clustered_heatmap(matrix: pd.DataFrame):
             row_linkage=row_linkage,
             col_linkage=col_linkage,
             cmap="YlGnBu",
-            linewidths=0.5,
+            linewidths=0.5 if show_grid else 0,
             linecolor='lightgray',
             figsize=(12, fig_height),
             cbar_pos=(0.02, 0.8, 0.03, 0.15),
@@ -42,7 +42,7 @@ def create_clustered_heatmap(matrix: pd.DataFrame):
     except Exception as e:
         # Fallback to a plain heatmap if clustering fails
         fig, ax = plt.subplots(figsize=(12, fig_height))
-        sns.heatmap(matrix, cmap="YlGnBu", ax=ax, linewidths=0.5, linecolor='lightgray', yticklabels=True, xticklabels=True)
+        sns.heatmap(matrix, cmap="YlGnBu", ax=ax, linewidths=0.5 if show_grid else 0, linecolor='lightgray', yticklabels=True, xticklabels=True)
         ax.set_title(f"Heatmap (Clustering Failed: {e})")
         return fig
     

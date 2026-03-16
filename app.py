@@ -92,6 +92,7 @@ st.sidebar.success(f"Processed {len(processed_files)} files.")
 # Filtering
 max_freq = int(matrix.sum(axis=1).max())
 min_occurrence = st.sidebar.slider("Minimum Occurrence Threshold", 1, max_freq, 1)
+show_grid = st.sidebar.checkbox("Show Grid Lines", value=True)
 
 filtered_matrix = filter_matrix(matrix, min_occurrence)
 
@@ -108,7 +109,7 @@ tab1, tab2, tab3 = st.tabs(["🔥 Clustered Heatmap", "📊 UpSet Plot", "📄 R
 with tab1:
     st.header("Clustered Heatmap (Jaccard)")
     with st.spinner("Generating heatmap..."):
-        fig_heatmap = create_clustered_heatmap(filtered_matrix)
+        fig_heatmap = create_clustered_heatmap(filtered_matrix, show_grid=show_grid)
         if fig_heatmap:
             st.pyplot(fig_heatmap)
             
