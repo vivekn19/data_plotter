@@ -11,19 +11,39 @@
 
 /* Dark Inputs Global */
 .stTextInput input, .stSelectbox [data-baseweb="select"], .stMultiSelect [data-baseweb="text-input-container"] {
-    background-color: #161b22 !important;
+    background-color: #0d1117 !important;
     color: #f0f6fc !important;
     border: 1px solid #30363d !important;
     border-radius: 6px;
 }
 
-/* Slider Customization */
-[data-testid="stSlider"] [data-testid="stThumb"] {
-    background-color: #10B981 !important;
+/* Slider Customization - Removing the grey highlighted block */
+[data-testid="stSlider"] [data-baseweb="slider"] > div {
+    background-color: transparent !important;
 }
 
-[data-testid="stSlider"] [data-baseweb="slider"] > div {
-    background-color: #30363d !important;
+[data-testid="stSlider"] [data-baseweb="slider"] > div > div:first-child {
+    background-color: #1a1f26 !important; /* Non-selected track */
+}
+
+[data-testid="stSlider"] [data-baseweb="slider"] > div > div + div {
+    background-color: #10B981 !important; /* Selected track */
+}
+
+[data-testid="stSlider"] [data-testid="stThumb"],
+[data-testid="stSlider"] div[role="slider"] {
+    background-color: #10B981 !important;
+    border: 2px solid #0d1117 !important;
+}
+
+/* Remove hover/active grey halo on widgets */
+.stSlider div:focus, .stCheckbox div:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+[data-baseweb="slider"] > div {
+    background-color: transparent !important;
 }
 
 /* Glassmorphism Cards for Sidebar */
@@ -36,13 +56,28 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Control Panel Alignment */
-.analysis-control-card {
+/* Card UI - Selective Targeting */
+/* Don't style the very first block in sidebar (header) */
+[data-testid="stSidebarNav"] + div [data-testid="stVerticalBlock"] > div > div:not(:first-child) > div[data-testid="stVerticalBlock"] {
     background-color: #0d1117;
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Targeting the main area analysis controls card */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"] > div > div[data-testid="stVerticalBlock"] {
+    background-color: #0d1117;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Ensure empty containers don't have height */
+div[data-testid="stVerticalBlock"]:empty {
+    display: none !important;
 }
 
 /* Metric Ribbon */
@@ -134,13 +169,24 @@ div[data-testid="stSidebar"] .stButton > button:not([kind="secondary"]):hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Graph Container */
+/* Graph Container Fix */
 .graph-container {
     background-color: white;
-    padding: 2rem;
-    border-radius: 16px;
-    margin-top: 1rem;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    padding: 0;
+    border-radius: 12px;
+    margin-top: -30px; /* Pull up harder to eliminate the white bar space */
+    overflow: hidden;
+}
+
+/* Tighten the tab panel padding */
+.stTabs [data-baseweb="tab-panel"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Hide Streamlit's default tab highlight line */
+.stTabs [data-baseweb="tab-highlight"] {
+    display: none !important;
 }
 
 /* Status Badges */

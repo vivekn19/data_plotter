@@ -102,43 +102,41 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
     
-    # Card 1: Data Selection
-    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
-    section_header("Data Selection", "📂")
-    mode = st.radio("Selection Mode", ["Folder", "Specific Files"], label_visibility="collapsed")
-    
-    if mode == "Folder":
-        data_dir = st.text_input("Directory Path", value=st.session_state.get('data_dir', os.path.join(os.getcwd(), "data")), label_visibility="collapsed")
-        if st.button("📁 Browse Directory", use_container_width=True):
-            selected = select_folder()
-            if selected:
-                st.session_state.data_dir = selected
-                st.session_state.selected_files = None
-                st.rerun()
-        st.session_state.data_dir = data_dir
-    else:
-        if st.button("📄 Select Multiple Files", use_container_width=True):
-            files = select_files()
-            if files:
-                st.session_state.selected_files = files
-                st.session_state.data_dir = None
+    # Selection Card (Native Container)
+    with st.container():
+        section_header("Data Selection", "📂")
+        mode = st.radio("Selection Mode", ["Folder", "Specific Files"], label_visibility="collapsed")
         
-        if st.session_state.get('selected_files'):
-            st.markdown(f'<div style="margin: 0.5rem 0;"><span class="status-badge badge-success">✓ {len(st.session_state.selected_files)} Files</span></div>', unsafe_allow_html=True)
-            if st.button("Clear Selection", type="secondary", use_container_width=True):
-                st.session_state.selected_files = None
-                st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+        if mode == "Folder":
+            data_dir = st.text_input("Directory Path", value=st.session_state.get('data_dir', os.path.join(os.getcwd(), "data")), label_visibility="collapsed")
+            if st.button("📁 Browse Directory", use_container_width=True):
+                selected = select_folder()
+                if selected:
+                    st.session_state.data_dir = selected
+                    st.session_state.selected_files = None
+                    st.rerun()
+            st.session_state.data_dir = data_dir
+        else:
+            if st.button("📄 Select Multiple Files", use_container_width=True):
+                files = select_files()
+                if files:
+                    st.session_state.selected_files = files
+                    st.session_state.data_dir = None
+            
+            if st.session_state.get('selected_files'):
+                st.markdown(f'<div style="margin: 0.5rem 0;"><span class="status-badge badge-success">✓ {len(st.session_state.selected_files)} Files</span></div>', unsafe_allow_html=True)
+                if st.button("Clear Selection", type="secondary", use_container_width=True):
+                    st.session_state.selected_files = None
+                    st.rerun()
 
-    # Card 2: Configuration
-    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
-    section_header("Analysis Config", "⚙️")
-    target_col = st.text_input("Target ID Column", value="Target ID", label_visibility="collapsed")
-    
-    if st.button("🚀 EXECUTE ANALYSIS", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Configuration Card (Native Container)
+    with st.container():
+        section_header("Analysis Config", "⚙️")
+        target_col = st.text_input("Target ID Column", value="Target ID", label_visibility="collapsed")
+        
+        if st.button("🚀 EXECUTE ANALYSIS", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
 
 # --- MAIN APP FLOW ---
 
@@ -154,7 +152,7 @@ st.markdown("""
 if st.session_state.get('selected_files'):
     matrix, processed_files = load_and_process_files(target_col=target_col, file_paths=st.session_state.selected_files)
 else:
-    if not os.path.exists(st.session_state.get('data_dir', "")):
+    if not st.session_state.get('data_dir') or not os.path.exists(st.session_state.get('data_dir', "")):
         st.error(f"Selection Required: Please select a valid directory or files in the sidebar.")
         st.stop()
     matrix, processed_files = load_and_process_files(directory_path=st.session_state.data_dir, target_col=target_col)
@@ -166,28 +164,27 @@ if matrix.empty:
 # Stats Ribbon
 metric_ribbon(len(processed_files), matrix.shape[0])
 
-# --- REFINED FILTERBAR (GROUPED CARD) ---
-st.markdown('<div class="analysis-control-card">', unsafe_allow_html=True)
-section_header("Analysis Controls", "🔍")
-col1, col2 = st.columns([2, 1])
-with col1:
-    max_freq = int(matrix.sum(axis=1).max())
-    min_occurrence = st.slider("Minimum Occurrence Threshold", 1, max_freq, 1, 
-                                help="Filter targets appearing in fewer than this many files.")
-with col2:
-    st.write("") # Spacer
-    show_grid = st.checkbox("Enable Heatmap Grid", value=True)
+# --- REFINED FILTERBAR (Native Container) ---
+with st.container():
+    section_header("Analysis Controls", "🔍")
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        max_freq = int(matrix.sum(axis=1).max())
+        min_occurrence = st.slider("Minimum Occurrence Threshold", 1, max_freq, 1, 
+                                    help="Filter targets appearing in fewer than this many files.")
+    with col2:
+        st.write("") # Spacer
+        show_grid = st.checkbox("Enable Heatmap Grid", value=True)
 
-filtered_matrix = filter_matrix(matrix, min_occurrence)
+    filtered_matrix = filter_matrix(matrix, min_occurrence)
 
-# Result Summary Badge
-st.markdown(f"""
-    <div style='margin-top: 1rem;'>
-        <span class="status-badge badge-info" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">Intersection: {filtered_matrix.shape[0]} Targets</span>
-        <span class="status-badge badge-success">Confidence: ≥ {min_occurrence} Slices</span>
-    </div>
-""", unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+    # Result Summary Badge
+    st.markdown(f"""
+        <div style='margin-top: 1rem;'>
+            <span class="status-badge badge-info" style="background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3);">Intersection: {filtered_matrix.shape[0]} Targets</span>
+            <span class="status-badge badge-success">Confidence: ≥ {min_occurrence} Slices</span>
+        </div>
+    """, unsafe_allow_html=True)
 
 if filtered_matrix.empty:
     st.warning("Filters too restrictive. No data meets current threshold.")
