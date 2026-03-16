@@ -17,12 +17,30 @@ st.set_page_config(
 )
 
 # Load custom CSS
-def local_css(file_name):
+def local_css(file_name, theme="dark"):
     if os.path.exists(file_name):
         with open(file_name) as f:
-            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+            css_content = f.read()
+            # Wrap the entire view in the theme class
+            st.markdown(f"""
+                <style>
+                    {css_content}
+                </style>
+                <script>
+                    var container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
+                    if (container) {{
+                        container.className = 'stAppViewContainer theme-{theme}';
+                    }}
+                    var sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+                    if (sidebar) {{
+                        sidebar.className = 'stSidebar theme-{theme}';
+                    }}
+                </script>
+            """, unsafe_allow_html=True)
 
-local_css("/Users/vivekpillai/sania/assets/style.css")
+# Initialize Session State
+if 'theme' not in st.session_state:
+    st.session_state.theme = "dark"
 
 # --- CORE HELPERS ---
 def select_folder():
@@ -95,12 +113,26 @@ def branded_loading(text="Processing Analysis..."):
 
 # --- SIDEBAR REDESIGN ---
 with st.sidebar:
-    st.markdown("""
+    st.markdown(f"""
         <div style='text-align: center; padding: 1.5rem 0;'>
-            <h1 style='color: #10B981; margin-bottom: 0; font-size: 1.8rem; letter-spacing: 2px;'>DNA ANALYZER</h1>
+            <h1 style='color: #10B981; margin-bottom: 0; font-size: 1.8rem; letter-spacing: 2px;'>DATA ANALYZER</h1>
             <p style='color: #6b7280; font-size: 0.7rem; font-weight: 600;'>ENTERPRISE BIOTECH SUITE</p>
         </div>
     """, unsafe_allow_html=True)
+    
+    # Theme Selection
+    with st.container():
+        section_header("Appearance", "🌗")
+        theme_mode = st.selectbox("Application Theme", ["Dark Mode", "Light Mode"], 
+                                  index=0 if st.session_state.theme == "dark" else 1,
+                                  label_visibility="collapsed")
+        new_theme = "dark" if theme_mode == "Dark Mode" else "light"
+        if new_theme != st.session_state.theme:
+            st.session_state.theme = new_theme
+            st.rerun()
+
+    # Load CSS with current theme
+    local_css("/Users/vivekpillai/sania/assets/style.css", theme=st.session_state.theme)
     
     # Selection Card (Native Container)
     with st.container():
