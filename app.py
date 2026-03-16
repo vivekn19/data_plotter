@@ -83,14 +83,22 @@ def metric_ribbon(files_count, unique_ids, method="Jaccard"):
     """, unsafe_allow_html=True)
 
 def section_header(title, icon="🔹"):
-    st.markdown(f"#### {icon} {title}")
+    st.markdown(f"<div style='display: flex; align-items: center; gap: 8px; margin-bottom: 0.5rem;'><span style='font-size: 1.2rem;'>{icon}</span><span style='font-weight: 600; font-size: 1rem;'>{title}</span></div>", unsafe_allow_html=True)
+
+def branded_loading(text="Processing Analysis..."):
+    st.markdown(f"""
+        <div class="branded-loader">
+            <div class="skeleton-loader"></div>
+            <p style='margin-top: 1rem; color: #10B981; font-weight: 600;'>{text}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 # --- SIDEBAR REDESIGN ---
 with st.sidebar:
     st.markdown("""
-        <div style='text-align: center; padding: 1rem 0;'>
-            <h1 style='color: #10B981; margin-bottom: 0;'>🧬 ANALYZER</h1>
-            <p style='color: #6b7280; font-size: 0.8rem;'>PREMIUM ANALYTICS SUITE</p>
+        <div style='text-align: center; padding: 1.5rem 0;'>
+            <h1 style='color: #10B981; margin-bottom: 0; font-size: 1.8rem; letter-spacing: 2px;'>DNA ANALYZER</h1>
+            <p style='color: #6b7280; font-size: 0.7rem; font-weight: 600;'>ENTERPRISE BIOTECH SUITE</p>
         </div>
     """, unsafe_allow_html=True)
     
@@ -100,7 +108,7 @@ with st.sidebar:
     mode = st.radio("Selection Mode", ["Folder", "Specific Files"], label_visibility="collapsed")
     
     if mode == "Folder":
-        data_dir = st.text_input("Directory Path", value=st.session_state.get('data_dir', os.path.join(os.getcwd(), "data")))
+        data_dir = st.text_input("Directory Path", value=st.session_state.get('data_dir', os.path.join(os.getcwd(), "data")), label_visibility="collapsed")
         if st.button("📁 Browse Directory", use_container_width=True):
             selected = select_folder()
             if selected:
@@ -116,7 +124,7 @@ with st.sidebar:
                 st.session_state.data_dir = None
         
         if st.session_state.get('selected_files'):
-            st.markdown(f'<span class="status-badge badge-success">✓ {len(st.session_state.selected_files)} Files Selected</span>', unsafe_allow_html=True)
+            st.markdown(f'<div style="margin: 0.5rem 0;"><span class="status-badge badge-success">✓ {len(st.session_state.selected_files)} Files</span></div>', unsafe_allow_html=True)
             if st.button("Clear Selection", type="secondary", use_container_width=True):
                 st.session_state.selected_files = None
                 st.rerun()
@@ -125,10 +133,11 @@ with st.sidebar:
     # Card 2: Configuration
     st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
     section_header("Analysis Config", "⚙️")
-    target_col = st.text_input("Target ID Column", value="Target ID")
+    target_col = st.text_input("Target ID Column", value="Target ID", label_visibility="collapsed")
     
     if st.button("🚀 EXECUTE ANALYSIS", use_container_width=True):
         st.cache_data.clear()
+        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- MAIN APP FLOW ---
@@ -136,8 +145,8 @@ with st.sidebar:
 # Header Hero
 st.markdown("""
     <div style='margin-bottom: 2rem;'>
-        <h1 style='font-size: 2.5rem; margin-bottom: 0.5rem;'>Target ID <span style='color: #10B981;'>Intelligence</span></h1>
-        <p style='color: #9ca3af; font-size: 1.1rem;'>Global cross-dataset intersection and similarity analysis for high-throughput screening.</p>
+        <h1 style='font-size: 2.8rem; margin-bottom: 0.2rem; font-weight: 800;'>Target ID <span style='color: #10B981;'>Intelligence</span></h1>
+        <p style='color: #6b7280; font-size: 1.1rem; max-width: 800px;'>High-throughput cross-dataset intersection and similarity analysis for discovery-phase screening.</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -157,75 +166,83 @@ if matrix.empty:
 # Stats Ribbon
 metric_ribbon(len(processed_files), matrix.shape[0])
 
-# --- REFINED FILTERBAR ---
-with st.expander("🔍 Advanced Filtering & Visual Controls", expanded=True):
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        max_freq = int(matrix.sum(axis=1).max())
-        min_occurrence = st.slider("Minimum Occurrence Threshold", 1, max_freq, 1, 
-                                 help="Filter targets appearing in fewer than this many files.")
-    with col2:
-        st.write("") # Spacer
-        show_grid = st.checkbox("Enable Heatmap Grid", value=True)
+# --- REFINED FILTERBAR (GROUPED CARD) ---
+st.markdown('<div class="sidebar-card" style="background-color: transparent; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">', unsafe_allow_html=True)
+section_header("Analysis Controls", "🔍")
+col1, col2 = st.columns([2, 1])
+with col1:
+    max_freq = int(matrix.sum(axis=1).max())
+    min_occurrence = st.slider("Minimum Occurrence Threshold", 1, max_freq, 1, 
+                                help="Filter targets appearing in fewer than this many files.")
+with col2:
+    st.write("") # Spacer
+    show_grid = st.checkbox("Enable Heatmap Grid", value=True)
 
 filtered_matrix = filter_matrix(matrix, min_occurrence)
 
 # Result Summary Badge
 st.markdown(f"""
-    <div style='margin: 1rem 0;'>
-        <span class="status-badge badge-info">Showing {filtered_matrix.shape[0]} unique Target IDs</span>
-        <span class="status-badge badge-success">Threshold: ≥ {min_occurrence} Overlaps</span>
+    <div style='margin-top: 1rem;'>
+        <span class="status-badge badge-info">Intersection: {filtered_matrix.shape[0]} Targets</span>
+        <span class="status-badge badge-success">Confidence: ≥ {min_occurrence} Slices</span>
     </div>
 """, unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 if filtered_matrix.empty:
     st.warning("Filters too restrictive. No data meets current threshold.")
     st.stop()
 
-# --- TABBED NAVIGATION (PILL STYLE) ---
+# --- TABBED NAVIGATION (UNDERLINE STYLE) ---
 tab1, tab2, tab3, tab4 = st.tabs(["🔥 HEATMAP", "📊 UPSET PLOT", "⭕ VENN DIAGRAM", "📄 RAW DATA"])
 
 with tab1:
     st.markdown('<div class="graph-container">', unsafe_allow_html=True)
-    with st.spinner("Rendering Clustered Heatmap..."):
-        fig_heatmap = create_clustered_heatmap(filtered_matrix, show_grid=show_grid)
-        if fig_heatmap:
-            st.pyplot(fig_heatmap)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                pdf_data = export_plot_to_bytes(fig_heatmap, 'pdf')
-                st.download_button("💾 DOWNLOAD PDF", pdf_data, "heatmap.pdf", "application/pdf", use_container_width=True)
-            with col2:
-                png_data = export_plot_to_bytes(fig_heatmap, 'png')
-                st.download_button("🖼️ DOWNLOAD PNG", png_data, "heatmap.png", "image/png", use_container_width=True)
+    heatmap_placeholder = st.empty()
+    with heatmap_placeholder.container():
+        branded_loading("Rendering Clustered Heatmap...")
+    
+    fig_heatmap = create_clustered_heatmap(filtered_matrix, show_grid=show_grid)
+    if fig_heatmap:
+        heatmap_placeholder.pyplot(fig_heatmap)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            pdf_data = export_plot_to_bytes(fig_heatmap, 'pdf')
+            st.download_button("💾 DOWNLOAD PDF", pdf_data, "heatmap.pdf", "application/pdf", use_container_width=True, key="h_pdf")
+        with col2:
+            png_data = export_plot_to_bytes(fig_heatmap, 'png')
+            st.download_button("🖼️ DOWNLOAD PNG", png_data, "heatmap.png", "image/png", use_container_width=True, key="h_png")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
     st.markdown('<div class="graph-container">', unsafe_allow_html=True)
-    with st.spinner("Rendering UpSet Analysis..."):
-        fig_upset = create_upset_plot(filtered_matrix)
-        if fig_upset:
-            st.pyplot(fig_upset)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                pdf_upset = export_plot_to_bytes(fig_upset, 'pdf')
-                st.download_button("💾 DOWNLOAD PDF", pdf_upset, "upset.pdf", "application/pdf", use_container_width=True)
-            with col2:
-                png_upset = export_plot_to_bytes(fig_upset, 'png')
-                st.download_button("🖼️ DOWNLOAD PNG", png_upset, "upset.png", "image/png", use_container_width=True)
+    upset_placeholder = st.empty()
+    with upset_placeholder.container():
+        branded_loading("Optimizing Set Intersections...")
+    
+    fig_upset = create_upset_plot(filtered_matrix)
+    if fig_upset:
+        upset_placeholder.pyplot(fig_upset)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            pdf_upset = export_plot_to_bytes(fig_upset, 'pdf')
+            st.download_button("💾 DOWNLOAD PDF", pdf_upset, "upset.pdf", "application/pdf", use_container_width=True, key="u_pdf")
+        with col2:
+            png_upset = export_plot_to_bytes(fig_upset, 'png')
+            st.download_button("🖼️ DOWNLOAD PNG", png_upset, "upset.png", "image/png", use_container_width=True, key="u_png")
     st.markdown('</div>', unsafe_allow_html=True)
 
 with tab3:
     st.markdown('<div class="graph-container">', unsafe_allow_html=True)
-    st.markdown("<p style='color: #111827; font-weight: 500;'>Focused Comparative Analysis</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #111827; font-weight: 600; font-size: 1.1rem; margin-bottom: 1rem;'>Targeted Comparative Analysis</p>", unsafe_allow_html=True)
     
     with st.form("venn_form"):
-        venn_cols = st.multiselect("Select files for Venn Comparison", 
-                                   options=filtered_matrix.columns.tolist(),
-                                   max_selections=3)
-        submit_venn = st.form_submit_button("📊 GENERATE VENN DIAGRAM")
+        venn_cols = st.multiselect("Select datasets for Venn Comparison (Max 3)", 
+                                    options=filtered_matrix.columns.tolist(),
+                                    max_selections=3)
+        submit_venn = st.form_submit_button("📊 GENERATE VENN DIAGRAM", use_container_width=True)
     
     if submit_venn or (st.session_state.get('venn_active') and not submit_venn):
         if len(venn_cols) in [2, 3]:
@@ -238,10 +255,10 @@ with tab3:
                 col1, col2 = st.columns(2)
                 with col1:
                     pdf_venn = export_plot_to_bytes(fig_venn, 'pdf')
-                    st.download_button("💾 DOWNLOAD PDF", pdf_venn, "venn.pdf", "application/pdf", key="vpdf")
+                    st.download_button("💾 DOWNLOAD PDF", pdf_venn, "venn.pdf", "application/pdf", key="vpdf", use_container_width=True)
                 with col2:
                     png_venn = export_plot_to_bytes(fig_venn, 'png')
-                    st.download_button("🖼️ DOWNLOAD PNG", png_venn, "venn.png", "image/png", key="vpng")
+                    st.download_button("🖼️ DOWNLOAD PNG", png_venn, "venn.png", "image/png", key="vpng", use_container_width=True)
         else:
             if submit_venn:
                 st.warning("Selection required: Choose 2 or 3 files.")
@@ -249,8 +266,8 @@ with tab3:
     st.markdown('</div>', unsafe_allow_html=True)
 
 with tab4:
-    st.markdown('<div class="graph-container" style="background-color: #111827; border: 1px solid rgba(255,255,255,0.1)">', unsafe_allow_html=True)
+    st.markdown('<div class="graph-container" style="background-color: #0d1117; border: 1px solid rgba(255,255,255,0.05); padding: 5px;">', unsafe_allow_html=True)
     st.dataframe(filtered_matrix, use_container_width=True)
     csv = filtered_matrix.to_csv().encode('utf-8')
-    st.download_button("📥 EXPORT BINARY MATRIX (CSV)", csv, "target_matrix.csv", "text/csv", use_container_width=True)
+    st.download_button("📥 EXPORT BINARY MATRIX (CSV)", csv, "target_matrix.csv", "text/csv", use_container_width=True, key="raw_csv")
     st.markdown('</div>', unsafe_allow_html=True)
