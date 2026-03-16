@@ -4,6 +4,9 @@ import pandas as pd
 from processor import load_and_process_files, filter_matrix
 from visualizer import create_clustered_heatmap, create_upset_plot, export_plot_to_bytes
 
+import tkinter as tk
+from tkinter import filedialog
+
 # Page configuration
 st.set_page_config(page_title="Target ID Analyzer", layout="wide")
 
@@ -15,11 +18,36 @@ using Clustered Heatmaps (Jaccard) and UpSet Plots.
 
 # Sidebar settings
 st.sidebar.header("Configuration")
-data_dir = st.sidebar.text_input("Data Directory Path", value="data")
+
+# Folder selection helper
+def select_folder():
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    folder_selected = filedialog.askdirectory(parent=root)
+    root.destroy()
+    return folder_selected
+
+# Initialize session state for directory
+if 'data_dir' not in st.session_state:
+    st.session_state.data_dir = os.path.join(os.getcwd(), "data")
+
+col1, col2 = st.sidebar.columns([3, 1])
+with col1:
+    data_dir = st.text_input("Data Directory Path", value=st.session_state.data_dir)
+with col2:
+    st.write("") # Padding
+    if st.button("📁", help="Browse Folder"):
+        selected = select_folder()
+        if selected:
+            st.session_state.data_dir = selected
+            st.rerun()
+
 target_col = st.sidebar.text_input("Target ID Column Name", value="Target ID")
 
 if st.sidebar.button("Load Data"):
     st.cache_data.clear()
+    st.session_state.data_dir = data_dir # Update from text input just in case
 
 # Main logic
 if not os.path.exists(data_dir):
