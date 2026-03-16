@@ -1,12 +1,10 @@
-/* Global Theme Variables */
+/* Global Root Variables - These will be redefined by app.py for theme switching */
 :root {
     --primary: #10B981;
     --primary-hover: #059669;
     --primary-glow: rgba(16, 185, 129, 0.3);
-}
-
-/* Dark Theme (Default) */
-.theme-dark {
+    
+    /* Default Dark Theme Values (will be overridden if light) */
     --bg-color: #030712;
     --sidebar-bg: #0d1117;
     --card-bg: #0d1117;
@@ -17,20 +15,6 @@
     --input-border: #30363d;
     --metric-gradient: linear-gradient(90deg, #111827 0%, #1f2937 100%);
     --skeleton-bg: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
-}
-
-/* Light Theme */
-.theme-light {
-    --bg-color: #f8fafc;
-    --sidebar-bg: #ffffff;
-    --card-bg: #ffffff;
-    --input-bg: #ffffff;
-    --text-color: #0f172a;
-    --text-muted: #64748b;
-    --border-color: rgba(0, 0, 0, 0.05);
-    --input-border: #e2e8f0;
-    --metric-gradient: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%);
-    --skeleton-bg: linear-gradient(90deg, #f1f5f9 25%, #cbd5e1 50%, #f1f5f9 75%);
 }
 
 [data-testid="stAppViewContainer"] {

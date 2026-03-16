@@ -21,21 +21,31 @@ def local_css(file_name, theme="dark"):
     if os.path.exists(file_name):
         with open(file_name) as f:
             css_content = f.read()
-            # Wrap the entire view in the theme class
+            
+            # Define theme variables for override
+            if theme == "light":
+                theme_overrides = """
+                :root {
+                    --bg-color: #f8fafc;
+                    --sidebar-bg: #ffffff;
+                    --card-bg: #ffffff;
+                    --input-bg: #ffffff;
+                    --text-color: #0f172a;
+                    --text-muted: #64748b;
+                    --border-color: rgba(0, 0, 0, 0.05);
+                    --input-border: #e2e8f0;
+                    --metric-gradient: linear-gradient(90deg, #f1f5f9 0%, #e2e8f0 100%);
+                    --skeleton-bg: linear-gradient(90deg, #f1f5f9 25%, #cbd5e1 50%, #f1f5f9 75%);
+                }
+                """
+            else:
+                theme_overrides = "" # Defaults are already dark in CSS
+
             st.markdown(f"""
                 <style>
                     {css_content}
+                    {theme_overrides}
                 </style>
-                <script>
-                    var container = window.parent.document.querySelector('[data-testid="stAppViewContainer"]');
-                    if (container) {{
-                        container.className = 'stAppViewContainer theme-{theme}';
-                    }}
-                    var sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
-                    if (sidebar) {{
-                        sidebar.className = 'stSidebar theme-{theme}';
-                    }}
-                </script>
             """, unsafe_allow_html=True)
 
 # Initialize Session State
