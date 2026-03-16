@@ -6,7 +6,7 @@ import pandas as pd
 import subprocess
 import platform
 from processor import load_and_process_files, filter_matrix
-from visualizer import create_clustered_heatmap, create_upset_plot, export_plot_to_bytes
+from visualizer import create_clustered_heatmap, create_upset_plot, create_venn_diagram, export_plot_to_bytes
 
 # Page configuration
 st.set_page_config(page_title="Target ID Analyzer", layout="wide")
@@ -133,7 +133,7 @@ if filtered_matrix.empty:
     st.stop()
 
 # Visualization Tabs
-tab1, tab2, tab3 = st.tabs(["🔥 Clustered Heatmap", "📊 UpSet Plot", "📄 Raw Data"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔥 Clustered Heatmap", "📊 UpSet Plot", "⭕ Venn Diagram", "📄 Raw Data"])
 
 with tab1:
     st.header("Clustered Heatmap (Jaccard)")
@@ -166,6 +166,32 @@ with tab2:
                 st.download_button("Download UpSet (PNG)", png_upset, "upset.png", "image/png")
 
 with tab3:
+    st.header("Venn Diagram")
+    st.info("Select exactly 2 or 3 files to generate a Venn Diagram.")
+    
+    venn_cols = st.multiselect("Select files for Venn Diagram", 
+                               options=filtered_matrix.columns.tolist(),
+                               max_selections=3)
+    
+    if len(venn_cols) in [2, 3]:
+        with st.spinner("Generating Venn diagram..."):
+            fig_venn = create_venn_diagram(filtered_matrix, venn_cols)
+            if fig_venn:
+                st.pyplot(fig_venn)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    pdf_venn = export_plot_to_bytes(fig_venn, 'pdf')
+                    st.download_button("Download Venn (PDF)", pdf_venn, "venn.pdf", "application/pdf")
+                with col2:
+                    png_venn = export_plot_to_bytes(fig_venn, 'png')
+                    st.download_button("Download Venn (PNG)", png_venn, "venn.png", "image/png")
+    elif len(venn_cols) == 1:
+        st.warning("Please select at least one more file.")
+    elif len(venn_cols) > 3:
+        st.error("Venn diagrams are limited to a maximum of 3 files. Please use the UpSet Plot for more sets.")
+
+with tab4:
     st.header("Binary Occurrence Matrix")
     st.dataframe(filtered_matrix)
     csv = filtered_matrix.to_csv().encode('utf-8')

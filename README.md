@@ -58,8 +58,10 @@ In the left sidebar, click **"Load Data"**. The tool will process all files in t
 Use the **Minimum Occurrence Threshold** slider to filter out noise. For example, setting the threshold to **10** will only display Target IDs that appear in 10 or more files, making large-scale heatmaps much easier to interpret.
 
 ### Exploring the Plots
+The data is organized into four specialized tabs:
 *   **Clustered Heatmap**: Files and Target IDs are automatically rearranged to place similar samples next to each other, revealing "blocks" of shared data.
-*   **UpSet Plot**: A modern alternative to Venn Diagrams optimized for 3+ sets. It visualizes the frequency of specific file intersections.
+*   **UpSet Plot**: A modern alternative to Venn Diagrams optimized for large numbers of sets. It visualizes the frequency of specific file intersections.
+*   **Venn Diagram**: A classic visualization specifically for focused 2-way or 3-way comparisons.
 *   **Raw Matrix**: Access the underlying binary data in the "Raw Data" tab and download it as a CSV.
 
 ---

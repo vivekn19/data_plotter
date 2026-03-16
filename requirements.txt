@@ -8,3 +8,4 @@ matplotlib
 plotly
 upsetplot
 streamlit
+matplotlib-venn

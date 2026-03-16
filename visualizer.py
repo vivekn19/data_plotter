@@ -5,6 +5,7 @@ from scipy.spatial.distance import pdist
 import pandas as pd
 import numpy as np
 from upsetplot import from_indicators, plot as upset_plot
+from matplotlib_venn import venn2, venn3
 import io
 
 def create_clustered_heatmap(matrix: pd.DataFrame, show_grid: bool = True):
@@ -65,6 +66,30 @@ def create_upset_plot(matrix: pd.DataFrame):
     fig = plt.figure(figsize=(15, 8))
     upset_plot(upset_data, fig=fig, element_size=None)
     
+    return fig
+
+def create_venn_diagram(matrix: pd.DataFrame, selected_columns: list):
+    """
+    Generates a Venn diagram for 2 or 3 selected files/columns.
+    """
+    if len(selected_columns) < 2 or len(selected_columns) > 3:
+        return None
+    
+    # Get sets of Target IDs for each selected file
+    sets = []
+    for col in selected_columns:
+        # Get IDs where presence is 1
+        ids = set(matrix[matrix[col] == 1].index)
+        sets.append(ids)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    
+    if len(selected_columns) == 2:
+        venn2(subsets=sets, set_labels=selected_columns, ax=ax)
+    else:
+        venn3(subsets=sets, set_labels=selected_columns, ax=ax)
+    
+    ax.set_title(f"Venn Diagram: {', '.join(selected_columns)}")
     return fig
 
 def export_plot_to_bytes(fig, format='pdf') -> io.BytesIO:
