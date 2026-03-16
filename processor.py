@@ -1,39 +1,38 @@
 import pandas as pd
 import os
 import streamlit as st
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 @st.cache_data
-def load_and_process_files(directory_path: str, target_col: str) -> Tuple[pd.DataFrame, List[str]]:
+def load_and_process_files(directory_path: Optional[str] = None, target_col: str = "Target ID", file_paths: Optional[List[str]] = None) -> Tuple[pd.DataFrame, List[str]]:
     """
-    Iterates through Excel and CSV files in a directory, extracts Target IDs,
-    cleans them, and returns a Binary Occurrence Matrix.
+    Processes files from a directory OR a specific list of file paths.
+    Extracts Target IDs, cleans them, and returns a Binary Occurrence Matrix.
     """
-    if not os.path.exists(directory_path):
-        return pd.DataFrame(), []
-
     all_data = []
     processed_files = []
-
-    # Supported extensions
     valid_extensions = ('.xlsx', '.xls', '.csv')
 
-    files = [f for f in os.listdir(directory_path) if f.lower().endswith(valid_extensions)]
+    # Determine which files to process
+    if file_paths:
+        target_files = [p for p in file_paths if p.lower().endswith(valid_extensions)]
+    elif directory_path and os.path.exists(directory_path):
+        target_files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.lower().endswith(valid_extensions)]
+    else:
+        return pd.DataFrame(), []
     
-    for filename in files:
-        filepath = os.path.join(directory_path, filename)
+    for filepath in target_files:
+        filename = os.path.basename(filepath)
         try:
-            if filename.lower().endswith(('.xlsx', '.xls')):
+            if filepath.lower().endswith(('.xlsx', '.xls')):
                 df = pd.read_excel(filepath)
             else:
                 df = pd.read_csv(filepath)
             
             if target_col in df.columns:
-                # Extract and clean Target IDs
                 ids = df[target_col].dropna().astype(str).str.strip().str.upper()
                 ids = ids[ids != ""].unique()
                 
-                # Store as temporary dataframe for merging
                 temp_df = pd.DataFrame({
                     'Target ID': ids,
                     'Filename': filename,
@@ -47,8 +46,6 @@ def load_and_process_files(directory_path: str, target_col: str) -> Tuple[pd.Dat
     if not all_data:
         return pd.DataFrame(), []
 
-    # Vectorized transformation to Binary Occurrence Matrix
-    # We concatenate all and then pivot
     combined_df = pd.concat(all_data, ignore_index=True)
     matrix = combined_df.pivot_table(index='Target ID', columns='Filename', values='Present', aggfunc='max').fillna(0).astype(int)
     
