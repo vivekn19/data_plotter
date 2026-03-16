@@ -9,18 +9,22 @@ from processor import load_and_process_files, filter_matrix
 from visualizer import create_clustered_heatmap, create_upset_plot, create_venn_diagram, export_plot_to_bytes
 
 # Page configuration
-st.set_page_config(page_title="Target ID Analyzer", layout="wide")
+st.set_page_config(
+    page_title="Target ID Analyzer | Enterprise", 
+    page_icon="🧬",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-st.title("🧬 Target ID Analyzer")
-st.markdown("""
-Extracts and compares Target IDs from multiple Excel/CSV files to identify commonalities 
-using Clustered Heatmaps (Jaccard) and UpSet Plots.
-""")
+# Load custom CSS
+def local_css(file_name):
+    if os.path.exists(file_name):
+        with open(file_name) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-# Sidebar settings
-st.sidebar.header("Configuration")
+local_css("/Users/vivekpillai/sania/assets/style.css")
 
-# Folder and File selection helpers
+# --- CORE HELPERS ---
 def select_folder():
     current_os = platform.system()
     try:
@@ -44,11 +48,9 @@ def select_files():
     try:
         if current_os == "Darwin":  # macOS
             script = 'choose file with prompt "Select Data Files" of type {"xlsx", "xls", "csv"} with multiple selections allowed'
-            # AppleScript returns paths separated by commas or special characters, we need to handle list
             cmd = f'osascript -e \'set theFiles to {script}\' -e \'repeat with aFile in theFiles\' -e \'log (POSIX path of aFile)\' -e \'end repeat\''
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             if result.returncode == 0:
-                # Filter stderr where logs usually go for osascript repeat
                 paths = [p.strip() for p in result.stderr.split('\n') if p.strip()]
                 return paths
         elif current_os == "Windows":
@@ -61,83 +63,131 @@ def select_files():
         st.error(f"File picker failed: {e}")
         return None
 
-# Initialize session state
-if 'data_dir' not in st.session_state:
-    st.session_state.data_dir = os.path.join(os.getcwd(), "data")
-if 'selected_files' not in st.session_state:
-    st.session_state.selected_files = None
+# --- UI LOGIC HELPERS ---
+def metric_ribbon(files_count, unique_ids, method="Jaccard"):
+    st.markdown(f"""
+        <div class="metric-container">
+            <div class="metric-item">
+                <div class="metric-value">{files_count}</div>
+                <div class="metric-label">Processed Files</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{unique_ids}</div>
+                <div class="metric-label">Unique Targets</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{method}</div>
+                <div class="metric-label">Analysis Method</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
-st.sidebar.markdown("### 1. Data Selection")
-mode = st.sidebar.radio("Selection Mode", ["Folder", "Specific Files"])
+def section_header(title, icon="🔹"):
+    st.markdown(f"#### {icon} {title}")
 
-if mode == "Folder":
-    col1, col2 = st.sidebar.columns([4, 1])
-    with col1:
-        data_dir = st.text_input("Data Directory Path", value=st.session_state.data_dir)
-    with col2:
-        st.write("") # Padding
-        if st.button("📁", help="Browse Folder"):
+# --- SIDEBAR REDESIGN ---
+with st.sidebar:
+    st.markdown("""
+        <div style='text-align: center; padding: 1rem 0;'>
+            <h1 style='color: #10B981; margin-bottom: 0;'>🧬 ANALYZER</h1>
+            <p style='color: #6b7280; font-size: 0.8rem;'>PREMIUM ANALYTICS SUITE</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Card 1: Data Selection
+    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
+    section_header("Data Selection", "📂")
+    mode = st.radio("Selection Mode", ["Folder", "Specific Files"], label_visibility="collapsed")
+    
+    if mode == "Folder":
+        data_dir = st.text_input("Directory Path", value=st.session_state.get('data_dir', os.path.join(os.getcwd(), "data")))
+        if st.button("📁 Browse Directory", use_container_width=True):
             selected = select_folder()
             if selected:
                 st.session_state.data_dir = selected
-                st.session_state.selected_files = None # Clear file selection
+                st.session_state.selected_files = None
                 st.rerun()
-    st.session_state.data_dir = data_dir
-else:
-    if st.sidebar.button("📄 Select Multiple Files"):
-        files = select_files()
-        if files:
-            st.session_state.selected_files = files
-            st.session_state.data_dir = None # Clear folder selection
-            
-    if st.session_state.selected_files:
-        st.sidebar.success(f"Selected {len(st.session_state.selected_files)} files.")
-        if st.sidebar.button("Clear Selection"):
-            st.session_state.selected_files = None
-            st.rerun()
+        st.session_state.data_dir = data_dir
+    else:
+        if st.button("📄 Select Multiple Files", use_container_width=True):
+            files = select_files()
+            if files:
+                st.session_state.selected_files = files
+                st.session_state.data_dir = None
+        
+        if st.session_state.get('selected_files'):
+            st.markdown(f'<span class="status-badge badge-success">✓ {len(st.session_state.selected_files)} Files Selected</span>', unsafe_allow_html=True)
+            if st.button("Clear Selection", type="secondary", use_container_width=True):
+                st.session_state.selected_files = None
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 2. File Configuration")
-target_col = st.sidebar.text_input("Target ID Column Name", value="Target ID")
+    # Card 2: Configuration
+    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
+    section_header("Analysis Config", "⚙️")
+    target_col = st.text_input("Target ID Column", value="Target ID")
+    
+    if st.button("🚀 EXECUTE ANALYSIS", use_container_width=True):
+        st.cache_data.clear()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-if st.sidebar.button("🚀 Load and Run Analysis"):
-    st.cache_data.clear()
+# --- MAIN APP FLOW ---
 
-# Load data based on selection
-if st.session_state.selected_files:
+# Header Hero
+st.markdown("""
+    <div style='margin-bottom: 2rem;'>
+        <h1 style='font-size: 2.5rem; margin-bottom: 0.5rem;'>Target ID <span style='color: #10B981;'>Intelligence</span></h1>
+        <p style='color: #9ca3af; font-size: 1.1rem;'>Global cross-dataset intersection and similarity analysis for high-throughput screening.</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# Data Ingestion
+if st.session_state.get('selected_files'):
     matrix, processed_files = load_and_process_files(target_col=target_col, file_paths=st.session_state.selected_files)
 else:
-    if not os.path.exists(st.session_state.data_dir):
-        st.error(f"Directory '{st.session_state.data_dir}' not found.")
+    if not os.path.exists(st.session_state.get('data_dir', "")):
+        st.error(f"Selection Required: Please select a valid directory or files in the sidebar.")
         st.stop()
     matrix, processed_files = load_and_process_files(directory_path=st.session_state.data_dir, target_col=target_col)
 
 if matrix.empty:
-    st.info("No valid files or data found in the directory. Please check the path and column name.")
+    st.info("No valid datasets detected. Please verify your source selection and column name.")
     st.stop()
 
-st.sidebar.success(f"Processed {len(processed_files)} files.")
+# Stats Ribbon
+metric_ribbon(len(processed_files), matrix.shape[0])
 
-# Filtering
-max_freq = int(matrix.sum(axis=1).max())
-min_occurrence = st.sidebar.slider("Minimum Occurrence Threshold", 1, max_freq, 1)
-show_grid = st.sidebar.checkbox("Show Grid Lines", value=True)
+# --- REFINED FILTERBAR ---
+with st.expander("🔍 Advanced Filtering & Visual Controls", expanded=True):
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        max_freq = int(matrix.sum(axis=1).max())
+        min_occurrence = st.slider("Minimum Occurrence Threshold", 1, max_freq, 1, 
+                                 help="Filter targets appearing in fewer than this many files.")
+    with col2:
+        st.write("") # Spacer
+        show_grid = st.checkbox("Enable Heatmap Grid", value=True)
 
 filtered_matrix = filter_matrix(matrix, min_occurrence)
 
-st.write(f"### Filtering Results")
-st.write(f"Showing **{filtered_matrix.shape[0]}** unique Target IDs appearing in **{min_occurrence}** or more files.")
+# Result Summary Badge
+st.markdown(f"""
+    <div style='margin: 1rem 0;'>
+        <span class="status-badge badge-info">Showing {filtered_matrix.shape[0]} unique Target IDs</span>
+        <span class="status-badge badge-success">Threshold: ≥ {min_occurrence} Overlaps</span>
+    </div>
+""", unsafe_allow_html=True)
 
 if filtered_matrix.empty:
-    st.warning("No IDs meet the current threshold.")
+    st.warning("Filters too restrictive. No data meets current threshold.")
     st.stop()
 
-# Visualization Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["🔥 Clustered Heatmap", "📊 UpSet Plot", "⭕ Venn Diagram", "📄 Raw Data"])
+# --- TABBED NAVIGATION (PILL STYLE) ---
+tab1, tab2, tab3, tab4 = st.tabs(["🔥 HEATMAP", "📊 UPSET PLOT", "⭕ VENN DIAGRAM", "📄 RAW DATA"])
 
 with tab1:
-    st.header("Clustered Heatmap (Jaccard)")
-    with st.spinner("Generating heatmap..."):
+    st.markdown('<div class="graph-container">', unsafe_allow_html=True)
+    with st.spinner("Rendering Clustered Heatmap..."):
         fig_heatmap = create_clustered_heatmap(filtered_matrix, show_grid=show_grid)
         if fig_heatmap:
             st.pyplot(fig_heatmap)
@@ -145,14 +195,15 @@ with tab1:
             col1, col2 = st.columns(2)
             with col1:
                 pdf_data = export_plot_to_bytes(fig_heatmap, 'pdf')
-                st.download_button("Download Heatmap (PDF)", pdf_data, "heatmap.pdf", "application/pdf")
+                st.download_button("💾 DOWNLOAD PDF", pdf_data, "heatmap.pdf", "application/pdf", use_container_width=True)
             with col2:
                 png_data = export_plot_to_bytes(fig_heatmap, 'png')
-                st.download_button("Download Heatmap (PNG)", png_data, "heatmap.png", "image/png")
+                st.download_button("🖼️ DOWNLOAD PNG", png_data, "heatmap.png", "image/png", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab2:
-    st.header("UpSet Plot")
-    with st.spinner("Generating UpSet plot..."):
+    st.markdown('<div class="graph-container">', unsafe_allow_html=True)
+    with st.spinner("Rendering UpSet Analysis..."):
         fig_upset = create_upset_plot(filtered_matrix)
         if fig_upset:
             st.pyplot(fig_upset)
@@ -160,49 +211,46 @@ with tab2:
             col1, col2 = st.columns(2)
             with col1:
                 pdf_upset = export_plot_to_bytes(fig_upset, 'pdf')
-                st.download_button("Download UpSet (PDF)", pdf_upset, "upset.pdf", "application/pdf")
+                st.download_button("💾 DOWNLOAD PDF", pdf_upset, "upset.pdf", "application/pdf", use_container_width=True)
             with col2:
                 png_upset = export_plot_to_bytes(fig_upset, 'png')
-                st.download_button("Download UpSet (PNG)", png_upset, "upset.png", "image/png")
+                st.download_button("🖼️ DOWNLOAD PNG", png_upset, "upset.png", "image/png", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab3:
-    st.header("Venn Diagram")
-    st.info("Select exactly 2 or 3 files to generate a Venn Diagram.")
+    st.markdown('<div class="graph-container">', unsafe_allow_html=True)
+    st.markdown("<p style='color: #111827; font-weight: 500;'>Focused Comparative Analysis</p>", unsafe_allow_html=True)
     
     with st.form("venn_form"):
-        venn_cols = st.multiselect("Select files for Venn Diagram", 
+        venn_cols = st.multiselect("Select files for Venn Comparison", 
                                    options=filtered_matrix.columns.tolist(),
                                    max_selections=3)
-        submit_venn = st.form_submit_button("📊 Generate Venn Diagram")
+        submit_venn = st.form_submit_button("📊 GENERATE VENN DIAGRAM")
     
     if submit_venn or (st.session_state.get('venn_active') and not submit_venn):
         if len(venn_cols) in [2, 3]:
-            # Store in session state to keep visible during downloads
             st.session_state.venn_active = True
             st.session_state.venn_cols = venn_cols
-            
-            with st.spinner("Generating Venn diagram..."):
-                fig_venn = create_venn_diagram(filtered_matrix, venn_cols)
-                if fig_venn:
-                    st.pyplot(fig_venn)
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        pdf_venn = export_plot_to_bytes(fig_venn, 'pdf')
-                        st.download_button("Download Venn (PDF)", pdf_venn, "venn.pdf", "application/pdf")
-                    with col2:
-                        png_venn = export_plot_to_bytes(fig_venn, 'png')
-                        st.download_button("Download Venn (PNG)", png_venn, "venn.png", "image/png")
+            fig_venn = create_venn_diagram(filtered_matrix, venn_cols)
+            if fig_venn:
+                st.pyplot(fig_venn)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    pdf_venn = export_plot_to_bytes(fig_venn, 'pdf')
+                    st.download_button("💾 DOWNLOAD PDF", pdf_venn, "venn.pdf", "application/pdf", key="vpdf")
+                with col2:
+                    png_venn = export_plot_to_bytes(fig_venn, 'png')
+                    st.download_button("🖼️ DOWNLOAD PNG", png_venn, "venn.png", "image/png", key="vpng")
         else:
             if submit_venn:
-                if len(venn_cols) < 2:
-                    st.warning("Please select at least 2 files.")
-                elif len(venn_cols) > 3:
-                    st.error("Venn diagrams are limited to a maximum of 3 files.")
+                st.warning("Selection required: Choose 2 or 3 files.")
             st.session_state.venn_active = False
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with tab4:
-    st.header("Binary Occurrence Matrix")
-    st.dataframe(filtered_matrix)
+    st.markdown('<div class="graph-container" style="background-color: #111827; border: 1px solid rgba(255,255,255,0.1)">', unsafe_allow_html=True)
+    st.dataframe(filtered_matrix, use_container_width=True)
     csv = filtered_matrix.to_csv().encode('utf-8')
-    st.download_button("Download CSV", csv, "matrix.csv", "text/csv")
+    st.download_button("📥 EXPORT BINARY MATRIX (CSV)", csv, "target_matrix.csv", "text/csv", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
