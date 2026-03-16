@@ -25,12 +25,15 @@ def create_clustered_heatmap(matrix: pd.DataFrame):
         row_linkage = linkage(pdist(matrix, metric='jaccard'), method='average')
         col_linkage = linkage(pdist(matrix.T, metric='jaccard'), method='average')
 
-        # Create the ClusterMap
+        # Create the ClusterMap with grid lines
+        # Use a small linewidth to distinguish cells
         g = sns.clustermap(
             matrix,
             row_linkage=row_linkage,
             col_linkage=col_linkage,
             cmap="YlGnBu",
+            linewidths=0.5,
+            linecolor='lightgray',
             figsize=(12, fig_height),
             cbar_pos=(0.02, 0.8, 0.03, 0.15),
             yticklabels=True,
@@ -39,7 +42,7 @@ def create_clustered_heatmap(matrix: pd.DataFrame):
     except Exception as e:
         # Fallback to a plain heatmap if clustering fails
         fig, ax = plt.subplots(figsize=(12, fig_height))
-        sns.heatmap(matrix, cmap="YlGnBu", ax=ax, yticklabels=True, xticklabels=True)
+        sns.heatmap(matrix, cmap="YlGnBu", ax=ax, linewidths=0.5, linecolor='lightgray', yticklabels=True, xticklabels=True)
         ax.set_title(f"Heatmap (Clustering Failed: {e})")
         return fig
     
