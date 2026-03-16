@@ -1,11 +1,12 @@
+import matplotlib
+matplotlib.use('Agg') # Force non-interactive backend for stability on macOS
 import streamlit as st
 import os
 import pandas as pd
+import subprocess
+import platform
 from processor import load_and_process_files, filter_matrix
 from visualizer import create_clustered_heatmap, create_upset_plot, export_plot_to_bytes
-
-import tkinter as tk
-from tkinter import filedialog
 
 # Page configuration
 st.set_page_config(page_title="Target ID Analyzer", layout="wide")
@@ -21,12 +22,37 @@ st.sidebar.header("Configuration")
 
 # Folder selection helper
 def select_folder():
-    root = tk.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-    folder_selected = filedialog.askdirectory(parent=root)
-    root.destroy()
-    return folder_selected
+    current_os = platform.system()
+    try:
+        if current_os == "Darwin":  # macOS
+            script = 'POSIX path of (choose folder with prompt "Select Data Folder")'
+            result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
+        elif current_os == "Windows":
+            # Native folder picker via PowerShell for Windows stability
+            cmd = (
+                "Add-Type -AssemblyName System.Windows.Forms; "
+                "$f = New-Object System.Windows.Forms.FolderBrowserDialog; "
+                "$f.ShowNewFolderButton = $true; "
+                "$result = $f.ShowDialog(); "
+                "if($result -eq 'OK'){ $f.SelectedPath }"
+            )
+            result = subprocess.run(['powershell', '-Command', cmd], capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
+        else:
+            # Linux fallback (if zenity is installed)
+            try:
+                result = subprocess.run(['zenity', '--file-selection', '--directory'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    return result.stdout.strip()
+            except:
+                pass
+        return None
+    except Exception as e:
+        st.error(f"Folder picker failed: {e}")
+        return None
 
 # Initialize session state for directory
 if 'data_dir' not in st.session_state:
